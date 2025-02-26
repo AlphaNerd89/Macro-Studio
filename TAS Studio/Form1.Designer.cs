@@ -29,7 +29,9 @@
         private void InitializeComponent()
         {
             record = new Button();
-            panel1 = new Panel();
+            InputPanel = new Panel();
+            label1 = new Label();
+            Playback = new Button();
             SuspendLayout();
             // 
             // record
@@ -42,29 +44,54 @@
             record.UseVisualStyleBackColor = true;
             record.Click += record_Click;
             // 
-            // panel1
+            // InputPanel
             // 
-            panel1.BackColor = SystemColors.ControlLight;
-            panel1.Location = new Point(12, 12);
-            panel1.Name = "panel1";
-            panel1.Size = new Size(371, 426);
-            panel1.TabIndex = 1;
+            InputPanel.BackColor = SystemColors.ControlLight;
+            InputPanel.Location = new Point(12, 12);
+            InputPanel.Name = "InputPanel";
+            InputPanel.Size = new Size(371, 426);
+            InputPanel.TabIndex = 1;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(436, 174);
+            label1.Name = "label1";
+            label1.Size = new Size(38, 15);
+            label1.TabIndex = 0;
+            label1.Text = "label1";
+            label1.Click += label1_Click;
+            // 
+            // Playback
+            // 
+            Playback.Location = new Point(436, 41);
+            Playback.Name = "Playback";
+            Playback.Size = new Size(93, 23);
+            Playback.TabIndex = 2;
+            Playback.Text = "Playback";
+            Playback.UseVisualStyleBackColor = true;
+            Playback.Click += Playback_Click;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(541, 450);
-            Controls.Add(panel1);
+            Controls.Add(Playback);
+            Controls.Add(label1);
+            Controls.Add(InputPanel);
             Controls.Add(record);
             Name = "Form1";
             Text = "Form1";
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
 
         private Button record;
-        private Panel panel1;
+        private Panel InputPanel;
+        private Label label1;
+        private Button Playback;
     }
 }
