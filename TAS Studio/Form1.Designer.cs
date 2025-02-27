@@ -30,7 +30,11 @@
         {
             record = new Button();
             InputPanel = new Panel();
+            vScrollBar1 = new VScrollBar();
             playback = new Button();
+            save = new Button();
+            load = new Button();
+            InputPanel.SuspendLayout();
             SuspendLayout();
             // 
             // record
@@ -46,10 +50,18 @@
             // InputPanel
             // 
             InputPanel.BackColor = SystemColors.ControlLight;
-            InputPanel.Location = new Point(12, 12);
+            InputPanel.Controls.Add(vScrollBar1);
+            InputPanel.Location = new Point(12, 41);
             InputPanel.Name = "InputPanel";
-            InputPanel.Size = new Size(371, 426);
+            InputPanel.Size = new Size(371, 397);
             InputPanel.TabIndex = 1;
+            // 
+            // vScrollBar1
+            // 
+            vScrollBar1.Location = new Point(354, 0);
+            vScrollBar1.Name = "vScrollBar1";
+            vScrollBar1.Size = new Size(17, 426);
+            vScrollBar1.TabIndex = 0;
             // 
             // playback
             // 
@@ -61,16 +73,39 @@
             playback.UseVisualStyleBackColor = true;
             playback.Click += playback_Click;
             // 
+            // save
+            // 
+            save.Location = new Point(12, 12);
+            save.Name = "save";
+            save.Size = new Size(75, 23);
+            save.TabIndex = 3;
+            save.Text = "Save to file";
+            save.UseVisualStyleBackColor = true;
+            save.Click += save_Click;
+            // 
+            // load
+            // 
+            load.Location = new Point(93, 12);
+            load.Name = "load";
+            load.Size = new Size(91, 23);
+            load.TabIndex = 4;
+            load.Text = "Load from file";
+            load.UseVisualStyleBackColor = true;
+            load.Click += load_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(541, 450);
+            Controls.Add(load);
+            Controls.Add(save);
             Controls.Add(playback);
             Controls.Add(InputPanel);
             Controls.Add(record);
             Name = "Form1";
             Text = "Form1";
+            InputPanel.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -79,5 +114,8 @@
         private Button record;
         private Panel InputPanel;
         private Button playback;
+        private VScrollBar vScrollBar1;
+        private Button save;
+        private Button load;
     }
 }

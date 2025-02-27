@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -29,11 +30,11 @@ namespace TAS_Studio
 
         private void GlobalKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.F1)
+            if (e.KeyCode == Keys.F2)
             {
                 SaveState();
             }
-            else if (e.KeyCode == Keys.F2)
+            else if (e.KeyCode == Keys.F3)
             {
                 RestoreState();
             }
@@ -61,8 +62,7 @@ namespace TAS_Studio
         {
             if (!isRecording)
             {
-                recordedKeys.Clear();
-                stopwatch.Restart();
+                stopwatch.Restart();  // Start the stopwatch from the current time
                 isRecording = true;
                 record.Text = "Stop Recording";
             }
@@ -75,13 +75,14 @@ namespace TAS_Studio
             }
         }
 
+
         private void SaveState()
         {
             if (isRecording)
             {
                 savedState = new List<(Keys, long)>(recordedKeys);
                 hasSavedState = true;
-                MessageBox.Show("State saved!", "Save State", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //MessageBox.Show("State saved!", "Save State", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -91,7 +92,7 @@ namespace TAS_Studio
             {
                 recordedKeys = new List<(Keys, long)>(savedState);
                 ShowRecordedData();
-                MessageBox.Show("State restored!", "Restore State", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //MessageBox.Show("State restored!", "Restore State", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -144,10 +145,50 @@ namespace TAS_Studio
                 foreach (var entry in recordedKeys)
                 {
                     Thread.Sleep((int)entry.time);
-                    keybd_event((byte)entry.key, 0, 0, 0);
-                    keybd_event((byte)entry.key, 0, 2, 0);
+                    SimulateKeyPress((ushort)entry.key);
                 }
             }).Start();
+        }
+
+        private void SimulateKeyPress(ushort virtualKeyCode)
+        {
+            // Simulate key down
+            INPUT inputDown = new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                union = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = virtualKeyCode,
+                        wScan = 0,
+                        dwFlags = KEYEVENTF_KEYDOWN,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            // Simulate key up
+            INPUT inputUp = new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                union = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = virtualKeyCode,
+                        wScan = 0,
+                        dwFlags = KEYEVENTF_KEYUP,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            INPUT[] inputs = new INPUT[] { inputDown, inputUp };
+
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -157,6 +198,111 @@ namespace TAS_Studio
 
         [DllImport("user32.dll")]
         private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
+
+        // SendInput P/Invoke and related structures
+        const int INPUT_KEYBOARD = 1;
+        const int KEYEVENTF_KEYDOWN = 0x0000;
+        const int KEYEVENTF_KEYUP = 0x0002;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct INPUT
+        {
+            public uint type;
+            public InputUnion union;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public struct InputUnion
+        {
+            [FieldOffset(0)] public MOUSEINPUT mi;
+            [FieldOffset(0)] public KEYBDINPUT ki;
+            [FieldOffset(0)] public HARDWAREINPUT hi;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct KEYBDINPUT
+        {
+            public ushort wVk;
+            public ushort wScan;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MOUSEINPUT
+        {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct HARDWAREINPUT
+        {
+            public uint uMsg;
+            public ushort wParamL;
+            public ushort wParamH;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern uint SendInput(uint nInputs, [In] INPUT[] pInputs, int cbSize);
+
+        // Saving and Loading methods
+
+        private void save_Click(object sender, EventArgs e)
+        {
+            SaveRecordedInputs();
+        }
+
+        private void load_Click(object sender, EventArgs e)
+        {
+            LoadRecordedInputs();
+        }
+
+        private void SaveRecordedInputs()
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string filePath = saveFileDialog.FileName;
+                StringBuilder sb = new StringBuilder();
+
+                foreach (var entry in recordedKeys)
+                {
+                    sb.AppendLine($"{entry.key},{entry.time}");
+                }
+
+                File.WriteAllText(filePath, sb.ToString());
+            }
+        }
+
+        private void LoadRecordedInputs()
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName;
+                var lines = File.ReadAllLines(filePath);
+                recordedKeys.Clear();
+
+                foreach (var line in lines)
+                {
+                    var parts = line.Split(',');
+                    if (parts.Length == 2 && Enum.TryParse(parts[0].Trim(), out Keys key) && long.TryParse(parts[1].Trim(), out long time))
+                    {
+                        recordedKeys.Add((key, time));
+                    }
+                }
+
+                ShowRecordedData();
+            }
+        }
     }
 
     // =============== Global Keyboard Hook Class ===============
