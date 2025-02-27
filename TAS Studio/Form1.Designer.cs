@@ -30,8 +30,7 @@
         {
             record = new Button();
             InputPanel = new Panel();
-            label1 = new Label();
-            Playback = new Button();
+            playback = new Button();
             SuspendLayout();
             // 
             // record
@@ -52,46 +51,33 @@
             InputPanel.Size = new Size(371, 426);
             InputPanel.TabIndex = 1;
             // 
-            // label1
+            // playback
             // 
-            label1.AutoSize = true;
-            label1.Location = new Point(436, 174);
-            label1.Name = "label1";
-            label1.Size = new Size(38, 15);
-            label1.TabIndex = 0;
-            label1.Text = "label1";
-            label1.Click += label1_Click;
-            // 
-            // Playback
-            // 
-            Playback.Location = new Point(436, 41);
-            Playback.Name = "Playback";
-            Playback.Size = new Size(93, 23);
-            Playback.TabIndex = 2;
-            Playback.Text = "Playback";
-            Playback.UseVisualStyleBackColor = true;
-            Playback.Click += Playback_Click;
+            playback.Location = new Point(436, 41);
+            playback.Name = "playback";
+            playback.Size = new Size(93, 23);
+            playback.TabIndex = 2;
+            playback.Text = "Playback";
+            playback.UseVisualStyleBackColor = true;
+            playback.Click += playback_Click;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(541, 450);
-            Controls.Add(Playback);
-            Controls.Add(label1);
+            Controls.Add(playback);
             Controls.Add(InputPanel);
             Controls.Add(record);
             Name = "Form1";
             Text = "Form1";
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
 
         private Button record;
         private Panel InputPanel;
-        private Label label1;
-        private Button Playback;
+        private Button playback;
     }
 }
