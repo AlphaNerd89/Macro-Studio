@@ -7,12 +7,14 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
+
 namespace TAS_Studio
 {
     public partial class Form1 : Form
     {
         private bool isRecording = false;
         private List<(Keys key, long time)> recordedKeys = new List<(Keys, long)>();
+        private List<(int x, int y, MouseButtons button, long time)> recordedMouseClicks = new List<(int, int, MouseButtons, long)>();
         private Stopwatch stopwatch = new Stopwatch();
 
         private List<(Keys key, long time)> savedState = new List<(Keys, long)>();
@@ -45,7 +47,7 @@ namespace TAS_Studio
             }
             else if (e.KeyCode == Keys.F6)
             {
-                PlaybackKeys();
+                PlaybackInputs();
             }
             else if (e.KeyCode == Keys.F7)
             {
@@ -75,14 +77,12 @@ namespace TAS_Studio
             }
         }
 
-
         private void SaveState()
         {
             if (isRecording)
             {
                 savedState = new List<(Keys, long)>(recordedKeys);
                 hasSavedState = true;
-                //MessageBox.Show("State saved!", "Save State", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -92,7 +92,6 @@ namespace TAS_Studio
             {
                 recordedKeys = new List<(Keys, long)>(savedState);
                 ShowRecordedData();
-                //MessageBox.Show("State restored!", "Restore State", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -113,11 +112,25 @@ namespace TAS_Studio
                 InputPanel.Controls.Add(inpt);
                 yOffset += inpt.Height + 5;
             }
+
+            for (int i = 0; i < recordedMouseClicks.Count; i++)
+            {
+                int index = i;
+                Label inpt = new Label
+                {
+                    Text = $"Mouse: ({recordedMouseClicks[i].x}, {recordedMouseClicks[i].y}), Button: {recordedMouseClicks[i].button}, Time Since Last Click: {recordedMouseClicks[i].time} ms",
+                    AutoSize = true,
+                    Location = new System.Drawing.Point(5, yOffset)
+                };
+                inpt.DoubleClick += (s, e) => EditRecordedData(index, inpt);
+                InputPanel.Controls.Add(inpt);
+                yOffset += inpt.Height + 5;
+            }
         }
 
         private void playback_Click(object sender, EventArgs e)
         {
-            PlaybackKeys();
+            PlaybackInputs();
         }
 
         private void EditRecordedData(int index, Label label)
@@ -138,21 +151,27 @@ namespace TAS_Studio
             }
         }
 
-        private void PlaybackKeys()
+        private void PlaybackInputs()
         {
             new Thread(() =>
             {
                 foreach (var entry in recordedKeys)
                 {
-                    Thread.Sleep((int)entry.time);
+                    Thread.Sleep((int)entry.time);  // Cast long to int
                     SimulateKeyPress((ushort)entry.key);
+                }
+
+                foreach (var mouseEntry in recordedMouseClicks)
+                {
+                    Thread.Sleep((int)mouseEntry.time);  // Cast long to int
+                    SimulateMouseClick(mouseEntry.x, mouseEntry.y, mouseEntry.button);
                 }
             }).Start();
         }
 
+
         private void SimulateKeyPress(ushort virtualKeyCode)
         {
-            // Simulate key down
             INPUT inputDown = new INPUT
             {
                 type = INPUT_KEYBOARD,
@@ -169,7 +188,6 @@ namespace TAS_Studio
                 }
             };
 
-            // Simulate key up
             INPUT inputUp = new INPUT
             {
                 type = INPUT_KEYBOARD,
@@ -187,20 +205,60 @@ namespace TAS_Studio
             };
 
             INPUT[] inputs = new INPUT[] { inputDown, inputUp };
-
-            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));  // Cast int to uint
         }
 
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void SimulateMouseClick(int x, int y, MouseButtons button)
         {
-            _globalKeyboardHook.Dispose();
+            SetCursorPos(x, y);
+
+            INPUT inputDown = new INPUT
+            {
+                type = INPUT_MOUSE,
+                union = new InputUnion
+                {
+                    mi = new MOUSEINPUT
+                    {
+                        dx = x,
+                        dy = y,
+                        dwFlags = (uint)(button == MouseButtons.Left ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_RIGHTDOWN),  // Cast to uint
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            INPUT inputUp = new INPUT
+            {
+                type = INPUT_MOUSE,
+                union = new InputUnion
+                {
+                    mi = new MOUSEINPUT
+                    {
+                        dx = x,
+                        dy = y,
+                        dwFlags = (uint)(button == MouseButtons.Left ? MOUSEEVENTF_LEFTUP : MOUSEEVENTF_RIGHTUP),  // Cast to uint
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            INPUT[] inputs = new INPUT[] { inputDown, inputUp };
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));  // Cast int to uint
         }
+
 
         [DllImport("user32.dll")]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
+        private static extern bool SetCursorPos(int x, int y);
 
         // SendInput P/Invoke and related structures
         const int INPUT_KEYBOARD = 1;
+        const int INPUT_MOUSE = 0;
+        const int MOUSEEVENTF_LEFTDOWN = 0x0002;
+        const int MOUSEEVENTF_LEFTUP = 0x0004;
+        const int MOUSEEVENTF_RIGHTDOWN = 0x0008;
+        const int MOUSEEVENTF_RIGHTUP = 0x0010;
         const int KEYEVENTF_KEYDOWN = 0x0000;
         const int KEYEVENTF_KEYUP = 0x0002;
 
@@ -277,6 +335,11 @@ namespace TAS_Studio
                     sb.AppendLine($"{entry.key},{entry.time}");
                 }
 
+                foreach (var mouseEntry in recordedMouseClicks)
+                {
+                    sb.AppendLine($"{mouseEntry.x},{mouseEntry.y},{mouseEntry.button},{mouseEntry.time}");
+                }
+
                 File.WriteAllText(filePath, sb.ToString());
             }
         }
@@ -290,6 +353,7 @@ namespace TAS_Studio
                 string filePath = openFileDialog.FileName;
                 var lines = File.ReadAllLines(filePath);
                 recordedKeys.Clear();
+                recordedMouseClicks.Clear();
 
                 foreach (var line in lines)
                 {
@@ -298,14 +362,24 @@ namespace TAS_Studio
                     {
                         recordedKeys.Add((key, time));
                     }
+                    else if (parts.Length == 4 && int.TryParse(parts[0].Trim(), out int x) &&
+                        int.TryParse(parts[1].Trim(), out int y) && Enum.TryParse(parts[2].Trim(), out MouseButtons button) &&
+                        long.TryParse(parts[3].Trim(), out long mouseTime))
+                    {
+                        recordedMouseClicks.Add((x, y, button, mouseTime));
+                    }
                 }
 
                 ShowRecordedData();
             }
         }
+
+        private void reset_Click(object sender, EventArgs e)
+        {
+            
+        }
     }
 
-    // =============== Global Keyboard Hook Class ===============
     public class GlobalKeyboardHook : IDisposable
     {
         private LowLevelKeyboardProc _proc;

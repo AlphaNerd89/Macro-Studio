@@ -34,6 +34,7 @@
             playback = new Button();
             save = new Button();
             load = new Button();
+            reset = new Button();
             InputPanel.SuspendLayout();
             SuspendLayout();
             // 
@@ -93,11 +94,22 @@
             load.UseVisualStyleBackColor = true;
             load.Click += load_Click;
             // 
+            // reset
+            // 
+            reset.Location = new Point(190, 12);
+            reset.Name = "reset";
+            reset.Size = new Size(75, 23);
+            reset.TabIndex = 5;
+            reset.Text = "Reset";
+            reset.UseVisualStyleBackColor = true;
+            reset.Click += reset_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(541, 450);
+            Controls.Add(reset);
             Controls.Add(load);
             Controls.Add(save);
             Controls.Add(playback);
@@ -117,5 +129,6 @@
         private VScrollBar vScrollBar1;
         private Button save;
         private Button load;
+        private Button reset;
     }
 }
