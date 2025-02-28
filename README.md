@@ -1,3 +1,3 @@
 # TAS Studio
 
-Use this tool to create tool assisted speedruns.
+Use this tool to create macros.
