@@ -376,7 +376,11 @@ namespace TAS_Studio
 
         private void reset_Click(object sender, EventArgs e)
         {
-            
+            recordedKeys.Clear();
+            recordedMouseClicks.Clear();
+            hasSavedState = false;
+            savedState.Clear();
+            InputPanel.Controls.Clear(); // Clear the displayed inputs
         }
     }
 
