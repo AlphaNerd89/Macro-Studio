@@ -1,4 +1,4 @@
-# TAS Studio
+# TAS/MACRO Studio
 
 Use this tool to create macros.
 
